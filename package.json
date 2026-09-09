@@ -4,6 +4,13 @@
   "private": true,
   "type": "module",
   "description": "Ein buntes Mathe-Lernwerkzeug für Klasse 2 und 3 – ohne Anmeldung.",
-  "scripts": { "dev": "node scripts/server.mjs", "test": "node --test tests/*.test.js", "check": "node --check js/app.js && node --check js/engine.js && node --check js/store.js" },
+  "scripts": {
+    "dev": "node scripts/server.mjs",
+    "test": "node --test tests/*.test.js",
+    "check": "node --check js/app.js && node --check js/engine.js && node --check js/store.js && node --check js/exercise-deck.js && node --check js/discovery.js && node --check js/pwa.js && node --check sw.js && node --check scripts/server.mjs && node --check scripts/check-mobile.mjs && node --check scripts/check-practice.mjs && node --check scripts/check-pwa.mjs",
+    "test:mobile": "node scripts/check-mobile.mjs",
+    "test:practice": "node scripts/check-practice.mjs",
+    "test:pwa": "node scripts/check-pwa.mjs"
+  },
   "engines": { "node": ">=22" }
 }

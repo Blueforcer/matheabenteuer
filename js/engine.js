@@ -1,4 +1,5 @@
 /** Procedural exercises. All random choices use the supplied RNG for reproducible practice. */
+import { shapeInventory, mirrorTask, fractionQuantity, bagChance, branchingChoices, areaPieces, borderTask, chartQuestions, gridJourney } from './discovery.js';
 export const DIFFICULTIES = [
   { id: 'easy', title: 'Entdecken', description: 'Kleine Schritte und übersichtliche Zahlen' },
   { id: 'medium', title: 'Üben', description: 'Mehr Zahlen und etwas mehr Denkarbeit' },
@@ -89,8 +90,9 @@ function arithmetic(c, operation) {
     if (operation === '-') [a, result] = [result, a];
   } else {
     b = table || pick(TABLES[level]);
+    // A selected row needs its complete set of facts, also during first practice.
     a = int(level === 0 ? 1 : grade === 3 && level === 2 ? 11 : 2,
-      grade === 3 && level === 2 ? 30 : level === 0 ? Math.min(5, Math.floor(limit / b)) : 10);
+      grade === 3 && level === 2 ? 30 : 10);
     result = a * b;
     if (operation === '/') [a, result] = [result, a];
   }
@@ -151,6 +153,33 @@ function arithmeticExercise(c, operation) {
       calc.result = 0;
     }
   }
+  if (operation === '*' || operation === '/') {
+    const mode = c.int(0, 3);
+    if (mode === 1) return {
+      prompt: operation === '*' ? 'Wie viele Gruppen ergeben diese Gesamtzahl?' : 'Welche Zahl wurde gleichmäßig verteilt?',
+      display: `□ ${SYMBOLS[operation]} ${calc.b} = ${calc.result}`, answer: String(calc.a),
+      hint: operation === '*' ? `Teile ${calc.result} durch ${calc.b}.` : `Rechne ${calc.result} mal ${calc.b}.`,
+      explanation: [operation === '*' ? `${calc.result} : ${calc.b} = ${calc.a}.` : `${calc.result} · ${calc.b} = ${calc.a}.`,
+        `Probe: ${calc.a} ${SYMBOLS[operation]} ${calc.b} = ${calc.result}.`],
+      meta: { kind: 'missing', ...calc, blank: 'a' },
+    };
+    const groups = operation === '*' ? calc.a : calc.result;
+    if (mode >= 2 && groups >= 2) {
+      const firstGroups = c.int(1, groups - 1), secondGroups = groups - firstGroups;
+      const first = operation === '*' ? firstGroups : firstGroups * calc.b;
+      const second = operation === '*' ? secondGroups : secondGroups * calc.b;
+      return {
+        prompt: operation === '*' ? 'Zwei Stapel mit gleich großen Gruppen: Wie viel ist es zusammen?' : 'Verteile beide Mengen gleichmäßig. Wie viel bekommt jede Gruppe insgesamt?',
+        display: `${first} ${SYMBOLS[operation]} ${calc.b} + ${second} ${SYMBOLS[operation]} ${calc.b} = ?`,
+        answer: String(calc.result), hint: 'Rechne zuerst die beiden Mal- oder Geteiltaufgaben. Addiere dann die Ergebnisse.',
+        explanation: operation === '*' ? [`${first} · ${calc.b} = ${first * calc.b} und ${second} · ${calc.b} = ${second * calc.b}.`,
+          `${first * calc.b} + ${second * calc.b} = ${calc.result}.`]
+          : [`${first} : ${calc.b} = ${firstGroups} und ${second} : ${calc.b} = ${secondGroups}.`,
+            `${firstGroups} + ${secondGroups} = ${calc.result}.`],
+        meta: { kind: 'arithmeticsplit', ...calc, first, second },
+      };
+    }
+  }
   return {
     prompt: ({ '+': 'Zähle zusammen.', '-': 'Rechne aus, was übrig bleibt.', '*': 'Wie viel ist das zusammen?', '/': 'Teile in gleich große Gruppen.' })[operation],
     display: `${calc.a} ${SYMBOLS[operation]} ${calc.b} = ?`, answer: String(calc.result),
@@ -164,7 +193,8 @@ function arithmeticExercise(c, operation) {
 
 function remainder(c) {
   const divisor = c.table > 1 ? c.table : c.pick(c.level === 0 ? [2, 3, 5] : [3, 4, 6, 7, 8, 9, 10]);
-  const quotient = c.int(c.level === 2 ? 11 : 1, c.level === 0 ? 5 : c.level === 1 ? 10 : 25);
+  const quotient = c.int(c.level === 2 ? 11 : 1,
+    Math.min([30, 50, 80][c.level], Math.floor((c.limit - divisor + 1) / divisor)));
   const rest = c.int(1, divisor - 1);
   const dividend = quotient * divisor + rest;
   const answer = `${quotient} Rest ${rest}`;
@@ -195,7 +225,8 @@ function operators(c) {
   const operation = c.pick(c.level === 0 || c.table === 1 ? ['+', '-'] : ['+', '-', '*', '/']);
   let calc = arithmetic(c, operation);
   if (c.table && (operation === '+' || operation === '-')) {
-    const a = c.int(operation === '+' ? 1 : c.table, operation === '+' ? c.limit - c.table : c.limit);
+    const range = Math.max(c.limit, c.table * 10);
+    const a = c.int(operation === '+' ? 1 : c.table, operation === '+' ? range - c.table : range);
     calc = { a, b: c.table, result: operation === '+' ? a + c.table : a - c.table, operation };
   }
   // The chosen equation must have exactly one matching operation (e.g. 2 + 2 = 2 · 2 is ambiguous).
@@ -215,12 +246,13 @@ function operators(c) {
 
 function sequences(c) {
   const step = c.table || c.pick(c.level === 0 ? [2, 5, 10] : c.level === 1 ? [3, 4, 6, 9, 10] : c.grade === 3 ? [7, 8, 9, 20, 25, 50] : [3, 6, 7, 8, 9]);
-  const count = c.level === 0 ? 5 : 6;
-  const maxStart = Math.floor((c.limit - step * (count - 1)) / step);
-  const start = Math.max(0, c.int(0, Math.max(0, maxStart))) * step;
-  const descending = c.level === 2 && c.int(0, 1) === 1;
+  const count = c.int(c.level === 0 ? 3 : 4, c.level === 0 ? 5 : 6);
+  const range = Math.min(c.grade === 2 ? 100 : 1000, Math.max(c.limit, 10 * step));
+  const maxStart = range - step * (count - 1);
+  const start = c.table ? c.int(0, Math.floor(maxStart / step)) * step : c.int(0, maxStart);
+  const descending = c.int(0, 1) === 1;
   const values = Array.from({ length: count }, (_, i) => start + step * (descending ? count - 1 - i : i));
-  const blank = c.level === 0 ? count - 1 : c.int(1, count - 2);
+  const blank = c.int(1, count - 1);
   return { prompt: 'Finde die Regel. Welche Zahl fehlt?', display: values.map((value, i) => i === blank ? '□' : value).join(' → '),
     answer: String(values[blank]), hint: `Vergleiche zwei benachbarte Zahlen. Die Sprünge sind immer gleich ${descending ? 'zurück' : 'vorwärts'}.`,
     explanation: [`Die Regel lautet: immer ${descending ? 'minus' : 'plus'} ${step}.`,
@@ -230,10 +262,11 @@ function sequences(c) {
 }
 
 function placevalue(c) {
-  const max = c.grade === 2 ? (c.level === 0 ? 20 : 99) : (c.level === 0 ? 99 : 999);
-  const number = c.int(c.level === 2 ? Math.floor(max / 2) : 10, max);
+  // Reading a single digit stays accessible across all two-digit numbers.
+  const max = c.grade === 2 ? 99 : (c.level === 0 ? 99 : 999);
+  const number = c.int(c.level === 2 ? Math.floor(max / 2) : c.level === 0 ? 0 : 10, max);
   if (c.level === 0) {
-    const place = c.pick([0, 1]);
+    const place = number < 10 ? 0 : c.pick([0, 1]);
     const answer = Math.floor(number / 10 ** place) % 10;
     return { prompt: `Welche Ziffer steht an der ${PLACES[place]}stelle?`, display: String(number), answer: String(answer),
       hint: 'Lies von rechts: Einer, Zehner, Hunderter.',
@@ -290,9 +323,19 @@ function rounding(c) {
 }
 
 function double(c) {
-  const half = c.int(1, Math.floor(c.limit / 2));
+  const split = c.int(0, 1) === 1;
+  const half = c.int(split ? 2 : 1, Math.floor(c.limit / 2));
   const isDouble = c.int(0, 1) === 0;
   const number = isDouble ? half : half * 2, answer = isDouble ? half * 2 : half;
+  if (split) {
+    const firstHalf = c.int(1, half - 1);
+    const first = isDouble ? firstHalf : firstHalf * 2, second = number - first;
+    return { prompt: isDouble ? 'Zähle beide Mengen zusammen und verdopple das Ergebnis.' : 'Zähle beide Mengen zusammen und halbiere das Ergebnis.',
+      display: `${first} + ${second}`, answer: String(answer),
+      hint: 'Bestimme zuerst die Summe. Verdoppeln heißt mal zwei, halbieren heißt geteilt durch zwei.',
+      explanation: [`${first} + ${second} = ${number}.`, isDouble ? `${number} + ${number} = ${answer}.` : `${number} : 2 = ${answer}.`],
+      meta: { kind: 'double', number, isDouble, first, second } };
+  }
   return { prompt: isDouble ? 'Verdopple die Zahl.' : 'Halbiere die Zahl.', display: String(number), answer: String(answer),
     hint: isDouble ? 'Verdoppeln heißt: dieselbe Zahl noch einmal dazuzählen.' : 'Halbieren heißt: in zwei gleich große Teile aufteilen.',
     explanation: [isDouble ? `${number} + ${number} = ${answer}.` : `${answer} + ${answer} = ${number}. Deshalb ist die Hälfte ${answer}.`],
@@ -300,12 +343,39 @@ function double(c) {
 }
 
 function money(c) {
-  if (c.level === 0) {
-    const coins = Array.from({ length: c.int(2, c.grade === 2 ? 4 : 6) }, () => c.pick([1, 2, 5, 10, 20]));
+  const mode = c.int(0, 3);
+  if (c.level === 0 && mode === 0) {
+    let remaining = c.limit;
+    const coins = Array.from({ length: c.int(2, c.grade === 2 ? 4 : 6) }, (_, index) => {
+      const coin = c.pick([1, 2, 5, 10, 20].filter(value => value <= remaining - (5 - index)));
+      remaining -= coin;
+      return coin;
+    });
     const total = coins.reduce((sum, coin) => sum + coin, 0);
     return { prompt: 'Zähle die Cent-Münzen zusammen.', display: coins.map(coin => `${coin} ct`).join(' + '), answer: String(total), unit: 'ct',
       hint: 'Beginne mit den großen Münzen. Gleiche Münzen kannst du zusammenfassen.',
       explanation: [`${coins.join(' + ')} = ${total}. Zusammen sind das ${total} Cent.`], meta: { kind: 'coins', coins } };
+  }
+  if (mode > 0 || c.level === 0) {
+    const scale = c.grade === 3 && c.level > 0 ? 100 : 1;
+    const unit = c.level === 0 ? 'ct' : '€';
+    const step = scale === 100 ? (c.level === 1 ? 10 : 5) : 1;
+    const max = Math.floor(c.limit / step);
+    const total = c.int(3, max) * step;
+    const first = c.int(1, total / step - 1) * step;
+    const second = total - first;
+    const price = value => scale === 100 ? euro(value) : `${value} ${unit}`;
+    const answer = mode === 1 ? total : second;
+    const prompt = mode === 1 ? 'Ein Heft und ein Stift kosten zusammen wie viel?'
+      : mode === 2 ? 'Du kaufst ein Heft. Wie viel Geld bleibt in deinem Geldbeutel?'
+        : 'Du kaufst ein Heft und einen Stift. Wie viel kostet der Stift?';
+    const display = mode === 1 ? `Heft: ${price(first)} · Stift: ${price(second)}`
+      : mode === 2 ? `Im Geldbeutel: ${price(total)} · Heft: ${price(first)}`
+        : `Zusammen: ${price(total)} · Heft: ${price(first)} · Stift: ?`;
+    return { prompt, display, answer: formatNumber(answer / scale), unit,
+      hint: mode === 1 ? 'Addiere die beiden Preise.' : 'Ziehe den bekannten Preis vom Gesamtbetrag ab.',
+      explanation: [mode === 1 ? `${price(first)} + ${price(second)} = ${price(total)}.` : `${price(total)} − ${price(first)} = ${price(second)}.`],
+      meta: { kind: 'moneycalc', total, first, mode, scale } };
   }
   if (c.grade === 2) {
     const paid = c.pick(c.level === 1 ? [10, 20] : [20, 50, 100]);
@@ -315,8 +385,8 @@ function money(c) {
       explanation: [`${paid} € − ${price} € = ${paid - price} €.`, `Probe: Preis ${price} € + Rückgeld ${paid - price} € = ${paid} €.`],
       meta: { kind: 'change', paid, price, scale: 1 } };
   }
-  const paid = c.pick(c.level === 1 ? [200, 500] : [500, 1000]);
-  const price = c.int(1, paid / (c.level === 1 ? 50 : 5) - 1) * (c.level === 1 ? 50 : 5);
+  const paid = c.pick([200, 500, 1000]);
+  const price = c.int(1, paid / (c.level === 1 ? 10 : 5) - 1) * (c.level === 1 ? 10 : 5);
   return { prompt: `Du bezahlst mit ${euro(paid)}. Wie viel Euro bekommst du zurück?`, display: `Preis: ${euro(price)}`, answer: formatNumber((paid - price) / 100), unit: '€',
     hint: 'Rechne zuerst alles in Cent. 100 Cent sind 1 Euro. Ein Komma trennt Euro und Cent.',
     explanation: [`${paid} ct − ${price} ct = ${paid - price} ct.`, `${paid - price} Cent sind ${euro(paid - price)}.`],
@@ -324,7 +394,9 @@ function money(c) {
 }
 
 function time(c) {
-  if (c.level < 2) {
+  const mode = c.int(0, 3);
+  const asTime = mins => `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, '0')}`;
+  if (c.level < 2 && mode === 0) {
     const hour = c.int(1, 12), minute = c.pick(c.level === 0 ? [0, 30] : c.grade === 2 ? [0, 15, 30, 45] : [5, 10, 15, 20, 25, 35, 40, 45, 50, 55]);
     const text = `${hour}:${String(minute).padStart(2, '0')} Uhr`;
     const choices = new Set([text, `${hour}:${String((minute + 15) % 60).padStart(2, '0')} Uhr`,
@@ -336,10 +408,34 @@ function time(c) {
         `Der kurze Zeiger ${minute === 0 ? `steht auf der ${hour}` : `ist zwischen ${hour} und ${hour % 12 + 1}`}. Es ist ${text}.`],
       meta: { kind: 'clock', hour, minute } };
   }
+  if (c.level === 0 && mode === 1) {
+    const start = c.int(1, 18) * 60;
+    const hours = c.int(1, 5);
+    const end = start + hours * 60;
+    return { prompt: 'Wie viele Stunden liegen zwischen diesen Uhrzeiten?', display: `${asTime(start)} Uhr → ${asTime(end)} Uhr`,
+      answer: String(hours), unit: 'Stunden', hint: 'Zähle von der Startstunde bis zur Endstunde weiter.',
+      explanation: [`${end / 60} − ${start / 60} = ${hours}. Es vergehen ${hours} Stunden.`],
+      meta: { kind: 'durationhours', start, end } };
+  }
+  if (mode >= 2) {
+    const step = c.level === 0 ? 30 : c.level === 1 ? 15 : 5;
+    const start = c.int(1, 18) * 60 + c.int(0, 60 / step - 1) * step;
+    const duration = c.int(1, c.level === 0 ? 2 : c.level === 1 ? 4 : 12) * step;
+    const end = start + duration;
+    const seekStart = mode === 3;
+    const answer = `${asTime(seekStart ? start : end)} Uhr`;
+    const target = seekStart ? start : end;
+    const choices = [target, target + step, target - step, target + 60 + step].map(value => `${asTime(value)} Uhr`);
+    return { prompt: seekStart ? 'Wann hat die Aktivität angefangen?' : 'Wann ist die Aktivität zu Ende?',
+      display: `${seekStart ? 'Ende' : 'Anfang'}: ${asTime(seekStart ? end : start)} Uhr · Dauer: ${duration} Minuten`,
+      answer, input: 'choice', choices: c.shuffle(choices),
+      hint: seekStart ? 'Gehe die Dauer von der Endzeit zurück.' : 'Gehe die Dauer von der Anfangszeit weiter.',
+      explanation: [`Von ${asTime(start)} Uhr bis ${asTime(end)} Uhr vergehen ${duration} Minuten.`],
+      meta: { kind: 'clockshift', start, end, seekStart } };
+  }
   const start = c.int(7, 16) * 60 + c.pick([0, 15, 30, 45]);
   const duration = c.int(1, c.grade === 2 ? 4 : 8) * 15;
   const end = start + duration;
-  const asTime = mins => `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, '0')}`;
   const firstStep = Math.min(duration, 60 - start % 60);
   return { prompt: 'Wie viele Minuten dauert es von Anfang bis Ende?', display: `${asTime(start)} Uhr → ${asTime(end)} Uhr`, answer: String(duration), unit: 'Minuten',
     hint: 'Rechne bis zur nächsten vollen Stunde und dann weiter. Eine Stunde hat 60 Minuten.',
@@ -349,27 +445,59 @@ function time(c) {
 }
 
 function lengths(c) {
-  if (c.grade === 3 && c.level > 0) {
-    const metres = c.int(1, c.level === 1 ? 5 : 9), centimetres = c.level === 1 ? 0 : c.int(1, 99);
-    const answer = metres * 100 + centimetres;
+  const mode = c.int(0, 4);
+  if (c.grade === 3 && c.level > 0 && mode < 2) {
+    const answer = c.int(1, c.level === 1 ? 100 : 1000) * (c.level === 1 ? 10 : 1);
+    const metres = Math.floor(answer / 100), centimetres = answer % 100;
+    if (mode === 1) {
+      const wholeMetres = Math.floor(answer / 100), rest = answer % 100;
+      return { prompt: 'Wie viele Zentimeter bleiben nach den ganzen Metern übrig?',
+        display: `${answer} cm = ${wholeMetres} m und □ cm`, answer: String(rest), unit: 'cm',
+        hint: 'Jede Gruppe von 100 Zentimetern bildet einen ganzen Meter.',
+        explanation: [`${wholeMetres} m = ${wholeMetres * 100} cm.`, `${answer} − ${wholeMetres * 100} = ${rest} cm bleiben übrig.`],
+        meta: { kind: 'lengthrest', centimetres: answer } };
+    }
     return { prompt: 'Wie viele Zentimeter sind das?', display: `${metres} m${centimetres ? ` ${centimetres} cm` : ''}`, answer: String(answer), unit: 'cm',
       hint: '1 Meter sind 100 Zentimeter.', explanation: [`${metres} m = ${metres * 100} cm.`, `${metres * 100} cm + ${centimetres} cm = ${answer} cm.`],
       meta: { kind: 'lengthconvert', metres, centimetres } };
   }
-  const a = c.int(5, c.level === 0 ? 10 : 70), b = c.int(1, Math.min(c.level === 0 ? 10 : 30, 100 - a));
-  const subtract = c.level === 2;
-  return { prompt: subtract ? `Ein Band ist ${a + b} cm lang. Du schneidest ${b} cm ab. Wie lang ist der Rest?` : 'Du legst zwei Bänder hintereinander. Wie lang sind sie zusammen?',
-    display: subtract ? `${a + b} cm − ${b} cm` : `${a} cm + ${b} cm`, answer: String(subtract ? a : a + b), unit: 'cm',
-    hint: subtract ? 'Ziehe das abgeschnittene Stück von der ganzen Länge ab.' : 'Beide Längen stehen in Zentimetern. Du kannst sie direkt addieren.',
-    explanation: [subtract ? `${a + b} − ${b} = ${a}. Der Rest ist ${a} cm lang.` : `${a} + ${b} = ${a + b}. Zusammen sind es ${a + b} cm.`],
-    meta: { kind: 'lengthsum', a, b, subtract } };
+  if (mode === 4) {
+    const a = c.int(1, c.limit), b = c.int(0, 4) === 0 ? a : c.int(1, c.limit);
+    const answer = a < b ? '<' : a > b ? '>' : '=';
+    return { prompt: 'Vergleiche die beiden Längen.', display: `${a} cm □ ${b} cm`, input: 'choice', choices: ['<', '=', '>'], answer,
+      hint: 'Beide Angaben haben dieselbe Einheit. Vergleiche die Zahlen.',
+      explanation: [`${a} cm ${answer} ${b} cm.`], meta: { kind: 'lengthcompare', a, b } };
+  }
+  const total = c.int(3, c.limit), a = c.int(1, total - 1), b = total - a;
+  const sum = mode === 0;
+  const prompt = sum ? 'Du legst zwei Bänder hintereinander. Wie lang sind sie zusammen?'
+    : mode === 1 ? `Ein Band ist ${total} cm lang. Du schneidest ${b} cm ab. Wie lang ist der Rest?`
+      : mode === 2 ? 'Ein Stift liegt auf dem Lineal. Wie lang ist er?'
+        : `Ein Weg ist ${total} m lang. ${b} m bist du schon gegangen. Wie viele Meter fehlen noch?`;
+  const unit = mode === 3 ? 'm' : 'cm';
+  return { prompt, display: sum ? `${a} cm + ${b} cm` : mode === 2 ? `Anfang bei ${b} cm · Ende bei ${total} cm` : `${total} ${unit} − ${b} ${unit}`,
+    answer: String(sum ? total : a), unit,
+    hint: sum ? 'Addiere die beiden Längen.' : 'Ziehe die bekannte Länge von der gesamten Länge ab.',
+    explanation: [sum ? `${a} + ${b} = ${total}. Zusammen sind es ${total} cm.` : `${total} − ${b} = ${a}. Gesucht sind ${a} ${unit}.`],
+    meta: { kind: 'lengthsum', a, b, subtract: !sum } };
 }
 
 function weights(c) {
-  if (c.level === 0) {
+  const mode = c.int(0, 5);
+  if (c.level === 0 && mode === 0) {
     const scenarios = [
       { object: 'eine Büroklammer', amount: 1, unit: 'g' }, { object: 'ein Kind', amount: 25, unit: 'kg' },
       { object: 'ein Apfel', amount: 150, unit: 'g' }, { object: 'ein Fahrrad', amount: 12, unit: 'kg' },
+      { object: 'ein Teebeutel', amount: 2, unit: 'g' }, { object: 'ein Brief', amount: 20, unit: 'g' },
+      { object: 'eine Tafel Schokolade', amount: 100, unit: 'g' }, { object: 'eine Erdbeere', amount: 15, unit: 'g' },
+      { object: 'ein Hühnerei', amount: 60, unit: 'g' }, { object: 'eine Scheibe Brot', amount: 40, unit: 'g' },
+      { object: 'ein Radiergummi', amount: 20, unit: 'g' }, { object: 'ein Bleistift', amount: 7, unit: 'g' },
+      { object: 'eine Münze', amount: 5, unit: 'g' }, { object: 'ein Tennisball', amount: 58, unit: 'g' },
+      { object: 'eine Katze', amount: 4, unit: 'kg' }, { object: 'ein großer Hund', amount: 30, unit: 'kg' },
+      { object: 'ein voller Schulranzen', amount: 5, unit: 'kg' }, { object: 'ein Reisekoffer', amount: 20, unit: 'kg' },
+      { object: 'eine Waschmaschine', amount: 70, unit: 'kg' }, { object: 'ein Stuhl', amount: 6, unit: 'kg' },
+      { object: 'ein Sack Kartoffeln', amount: 10, unit: 'kg' }, { object: 'ein Kürbis', amount: 3, unit: 'kg' },
+      { object: 'ein Baby', amount: 4, unit: 'kg' }, { object: 'ein Pony', amount: 200, unit: 'kg' },
     ];
     const item = c.pick(scenarios);
     return { prompt: `Welche Einheit passt ungefähr für ${item.object}?`, display: `${item.amount} …`, input: 'choice', choices: ['g', 'kg'], answer: item.unit,
@@ -377,8 +505,8 @@ function weights(c) {
       explanation: [`Für ${item.object} sind ungefähr ${item.amount} ${item.unit} plausibel.`, '1 Kilogramm besteht aus 1000 Gramm.'],
       meta: { kind: 'weightunit', ...item } };
   }
-  if (c.grade === 3 && c.level === 1 && c.int(0, 1) === 0) {
-    const grams = c.pick([250, 500, 750, 1000]);
+  if (c.grade === 3 && c.level > 0 && mode < 2) {
+    const grams = c.int(1, c.level === 1 ? 100 : 200) * (c.level === 1 ? 10 : 5);
     const toGrams = c.int(0, 1) === 0;
     return { prompt: `Wandle das Gewicht in ${toGrams ? 'Gramm' : 'Kilogramm'} um.`, display: toGrams ? `${formatNumber(grams / 1000)} kg` : `${grams} g`,
       answer: formatNumber(toGrams ? grams : grams / 1000), unit: toGrams ? 'g' : 'kg',
@@ -386,19 +514,45 @@ function weights(c) {
       explanation: ['Ein Kilogramm besteht aus 1000 Gramm.', `${formatNumber(grams / 1000)} kg = ${grams} g.`],
       meta: { kind: 'weightconvert', grams, toGrams } };
   }
-  if (c.grade === 3 && c.level === 2) {
-    const firstGrams = c.int(1, 9) * 100;
-    const addedGrams = c.int(1, (1000 - firstGrams) / 25) * 25;
-    return { prompt: 'Wie viel Gramm wiegen die beiden Päckchen zusammen?',
-      display: `${formatNumber(firstGrams / 1000)} kg + ${addedGrams} g`, answer: String(firstGrams + addedGrams), unit: 'g',
-      hint: 'Wandle zuerst Kilogramm in Gramm um. 1 kg = 1000 g. Addiere erst, wenn beide Angaben dieselbe Einheit haben.',
-      explanation: [`${formatNumber(firstGrams / 1000)} kg = ${firstGrams} g.`, `${firstGrams} g + ${addedGrams} g = ${firstGrams + addedGrams} g.`],
-      meta: { kind: 'weightmixed', firstGrams, addedGrams } };
+  if (mode === 5) {
+    const mixed = c.grade === 3 && c.level > 0;
+    const leftGrams = mixed ? c.int(1, 100) * 10 : c.int(1, c.limit);
+    const rightGrams = c.int(0, 4) === 0 ? leftGrams : mixed ? c.int(1, 100) * 10 : c.int(1, c.limit);
+    const unit = mixed || c.grade === 3 ? 'g' : 'kg';
+    const answer = leftGrams < rightGrams ? '<' : leftGrams > rightGrams ? '>' : '=';
+    return { prompt: 'Vergleiche die Gewichte. Welches Zeichen passt?',
+      display: `${mixed ? `${formatNumber(leftGrams / 1000)} kg` : `${leftGrams} ${unit}`} □ ${rightGrams} ${unit}`,
+      answer, input: 'choice', choices: ['<', '=', '>'],
+      hint: mixed ? 'Wandle Kilogramm zuerst in Gramm um. Vergleiche dann die Zahlen.' : 'Beide Gewichte haben dieselbe Einheit. Vergleiche ihre Zahlen.',
+      explanation: [...(mixed ? [`${formatNumber(leftGrams / 1000)} kg = ${leftGrams} g.`] : []), `${leftGrams} ${unit} ${answer} ${rightGrams} ${unit}.`],
+      meta: { kind: 'weightcompare', leftGrams, rightGrams } };
   }
-  const factor = c.grade === 2 ? 1 : c.level === 1 ? 10 : 50;
-  const total = c.int(8, c.grade === 2 ? 50 : 20) * factor;
+  const factor = c.grade === 3 && c.level > 0 ? (c.level === 1 ? 10 : 5) : 1;
+  const total = c.int(3, c.limit / factor) * factor;
   const part = c.int(1, Math.floor(total / factor) - 1) * factor;
   const unit = c.grade === 2 ? 'kg' : 'g';
+  if (c.grade === 3 && c.level === 2 && mode === 2) {
+    const firstGrams = part, addedGrams = total - part;
+    return { prompt: 'Wie viel Gramm wiegen die beiden Päckchen zusammen?',
+      display: `${formatNumber(firstGrams / 1000)} kg + ${addedGrams} g`, answer: String(total), unit: 'g',
+      hint: 'Wandle zuerst Kilogramm in Gramm um. 1 kg = 1000 g. Addiere erst, wenn beide Angaben dieselbe Einheit haben.',
+      explanation: [`${formatNumber(firstGrams / 1000)} kg = ${firstGrams} g.`, `${firstGrams} g + ${addedGrams} g = ${total} g.`],
+      meta: { kind: 'weightmixed', firstGrams, addedGrams } };
+  }
+  if (mode === 1 || mode === 2) {
+    return { prompt: 'Wie schwer sind die beiden Kisten zusammen?', display: `${part} ${unit} + ${total - part} ${unit}`,
+      answer: String(total), unit, hint: 'Addiere die Gewichte. Beide Angaben haben dieselbe Einheit.',
+      explanation: [`${part} + ${total - part} = ${total}. Beide Kisten wiegen zusammen ${total} ${unit}.`],
+      meta: { kind: 'weightsum', a: part, b: total - part } };
+  }
+  if (mode === 3) {
+    const mixed = c.grade === 3 && c.level === 2;
+    return { prompt: 'Aus einer Kiste wird etwas herausgenommen. Wie schwer ist der verbleibende Inhalt?',
+      display: `Vorher: ${mixed ? `${formatNumber(total / 1000)} kg` : `${total} ${unit}`} · Herausgenommen: ${part} ${unit}`,
+      answer: String(total - part), unit, hint: mixed ? 'Rechne Kilogramm in Gramm um und ziehe das herausgenommene Gewicht ab.' : 'Ziehe das herausgenommene Gewicht vom Anfangsgewicht ab.',
+      explanation: [...(mixed ? [`${formatNumber(total / 1000)} kg = ${total} g.`] : []), `${total} − ${part} = ${total - part} ${unit}.`],
+      meta: { kind: 'weights', total, part } };
+  }
   return { prompt: `Zwei Kisten wiegen zusammen ${total} ${unit}. Eine wiegt ${part} ${unit}. Wie schwer ist die andere?`, display: `${total} ${unit} − ${part} ${unit}`, answer: String(total - part), unit,
     hint: 'Gesamtgewicht minus bekanntes Gewicht ergibt das fehlende Gewicht.',
     explanation: [`${total} − ${part} = ${total - part}.`, `Die andere Kiste wiegt ${total - part} ${unit}.`],
@@ -406,24 +560,57 @@ function weights(c) {
 }
 
 function capacity(c) {
-  if (c.level === 0) {
-    const small = c.pick(['einen Teelöffel', 'eine kleine Medizinpipette', 'einen Tropfen Wasser']);
-    const large = c.pick(['einen Eimer', 'eine Badewanne', 'eine Gießkanne']);
+  const mode = c.int(0, 5);
+  if (c.level === 0 && mode === 0) {
+    const small = c.pick(['einen Teelöffel', 'eine kleine Medizinpipette', 'einen Esslöffel', 'ein Parfümfläschchen', 'eine kleine Spritze', 'einen Schluck Wasser']);
+    const large = c.pick(['einen Eimer', 'eine Badewanne', 'eine Gießkanne', 'ein Aquarium', 'ein großes Fass', 'einen Wassertank']);
     const useSmall = c.int(0, 1) === 0;
     return { prompt: 'Mit welcher Einheit lässt sich der Inhalt besser angeben?', display: `Denke an ${useSmall ? small : large}.`, input: 'choice', choices: ['Milliliter (ml)', 'Liter (l)'],
       answer: useSmall ? 'Milliliter (ml)' : 'Liter (l)', hint: 'Milliliter sind für sehr kleine Mengen. Ein Liter entspricht 1000 Millilitern.',
       explanation: [`Für ${useSmall ? small : large} passen ${useSmall ? 'Milliliter' : 'Liter'} besser.`], meta: { kind: 'capacityunit', small: useSmall } };
   }
-  if (c.grade === 3 && c.level === 2) {
-    const glass = c.pick([100, 125, 200, 250, 500]), total = 1000;
-    return { prompt: `Eine Flasche enthält 1 Liter. Wie viele volle Becher mit je ${glass} ml kannst du füllen?`, display: `1 l : ${glass} ml`, answer: String(total / glass), unit: 'Becher',
-      hint: 'Rechne zuerst 1 Liter in Milliliter um: 1 l = 1000 ml.',
-      explanation: [`1 l = ${total} ml.`, `${total} : ${glass} = ${total / glass}. Du kannst ${total / glass} volle Becher füllen.`],
+  if (c.grade === 3 && c.level > 0 && mode === 0) {
+    const millilitres = c.int(1, 100) * 10;
+    const toMl = c.int(0, 1) === 0;
+    return { prompt: `Wandle den Inhalt in ${toMl ? 'Milliliter' : 'Liter'} um.`,
+      display: toMl ? `${formatNumber(millilitres / 1000)} l` : `${millilitres} ml`,
+      answer: formatNumber(toMl ? millilitres : millilitres / 1000), unit: toMl ? 'ml' : 'l',
+      hint: 'Ein Liter enthält 1000 Milliliter.',
+      explanation: [`${formatNumber(millilitres / 1000)} l = ${millilitres} ml.`],
+      meta: { kind: 'capacityconvert', millilitres, toMl } };
+  }
+  if (c.grade === 3 && c.level === 2 && mode === 1) {
+    const glass = c.pick([25, 50, 75, 100, 125, 150, 200, 250]);
+    const total = c.int(2, Math.floor(1000 / glass)) * glass;
+    return { prompt: `Eine Flasche enthält ${formatNumber(total / 1000)} Liter. Wie viele volle Becher mit je ${glass} ml kannst du füllen?`, display: `${formatNumber(total / 1000)} l : ${glass} ml`, answer: String(total / glass), unit: 'Becher',
+      hint: 'Rechne zuerst Liter in Milliliter um: 1 l = 1000 ml.',
+      explanation: [`${formatNumber(total / 1000)} l = ${total} ml.`, `${total} : ${glass} = ${total / glass}. Du kannst ${total / glass} volle Becher füllen.`],
       meta: { kind: 'capacitydivision', total, glass } };
   }
-  const a = c.int(1, c.level === 1 ? 10 : 20), b = c.int(1, c.level === 1 ? 10 : 20);
-  return { prompt: 'Du gießt das Wasser aus zwei Gefäßen zusammen. Wie viel ist es?', display: `${a} l + ${b} l`, answer: String(a + b), unit: 'l',
-    hint: 'Beide Mengen stehen in Litern. Addiere die Zahlen.', explanation: [`${a} l + ${b} l = ${a + b} l.`], meta: { kind: 'capacitysum', a, b } };
+  const step = c.grade === 3 && c.level > 0 ? 10 : 1;
+  const unit = c.grade === 3 && c.level > 0 ? 'ml' : 'l';
+  if (mode === 5) {
+    const a = c.int(1, c.limit / step) * step;
+    const b = c.int(0, 4) === 0 ? a : c.int(1, c.limit / step) * step;
+    const mixed = c.grade === 3 && c.level === 2;
+    const answer = a < b ? '<' : a > b ? '>' : '=';
+    return { prompt: 'Vergleiche den Inhalt der beiden Gefäße.', display: `${mixed ? `${formatNumber(a / 1000)} l` : `${a} ${unit}`} □ ${b} ${unit}`,
+      answer, input: 'choice', choices: ['<', '=', '>'],
+      hint: mixed ? 'Wandle die Liter zuerst in Milliliter um.' : 'Beide Mengen haben dieselbe Einheit. Vergleiche die Zahlen.',
+      explanation: [...(mixed ? [`${formatNumber(a / 1000)} l = ${a} ml.`] : []), `${a} ${unit} ${answer} ${b} ${unit}.`],
+      meta: { kind: 'capacitycompare', a, b } };
+  }
+  const total = c.int(3, c.limit / step) * step;
+  const a = c.int(1, total / step - 1) * step, b = total - a;
+  if (mode === 3 || mode === 4) {
+    return { prompt: mode === 3 ? 'Du gießt einen Teil des Wassers aus. Wie viel bleibt im Gefäß?'
+      : 'Wie viel Wasser musst du noch nachfüllen, damit das Gefäß voll ist?',
+      display: mode === 3 ? `Anfang: ${total} ${unit} · Ausgegossen: ${a} ${unit}` : `Fassungsvermögen: ${total} ${unit} · Bereits gefüllt: ${a} ${unit}`,
+      answer: String(b), unit, hint: 'Ziehe die bekannte Teilmenge von der Gesamtmenge ab.',
+      explanation: [`${total} − ${a} = ${b} ${unit}.`], meta: { kind: 'capacitydifference', total, part: a } };
+  }
+  return { prompt: 'Du gießt das Wasser aus zwei Gefäßen zusammen. Wie viel ist es?', display: `${a} ${unit} + ${b} ${unit}`, answer: String(total), unit,
+    hint: 'Beide Mengen haben dieselbe Einheit. Addiere die Zahlen.', explanation: [`${a} ${unit} + ${b} ${unit} = ${total} ${unit}.`], meta: { kind: 'capacitysum', a, b } };
 }
 
 const FLAT_SHAPES = [
@@ -440,6 +627,7 @@ const SOLIDS = [
 ];
 
 function shapes(c) {
+  if (c.int(0, 4) !== 0) return shapeInventory(c);
   if (c.level === 0) {
     const shape = c.pick(FLAT_SHAPES);
     return { prompt: 'Wie heißt diese Form möglichst genau?', display: 'Schau auf die Form.', input: 'choice', answer: shape.title,
@@ -464,6 +652,7 @@ function shapes(c) {
 }
 
 function symmetry(c) {
+  if (c.int(0, 4) !== 0) return mirrorTask(c);
   const shapes = [
     { name: 'square', title: 'Ein Quadrat', count: 4, explanation: 'Eine waagerechte, eine senkrechte und zwei diagonale Spiegelachsen: zusammen 4.' },
     { name: 'rectangle', title: 'Ein Rechteck, das kein Quadrat ist', count: 2, explanation: 'Die waagerechte und die senkrechte Mittellinie sind Spiegelachsen: zusammen 2.' },
@@ -487,6 +676,7 @@ function symmetry(c) {
 }
 
 function perimeter(c) {
+  if (c.int(0, 4) !== 0) return borderTask(c);
   const width = c.int(2, c.level === 0 ? 5 : c.grade === 2 ? 9 : 12), height = c.int(2, c.level === 0 ? 4 : c.grade === 2 ? 8 : 10);
   const area = c.level === 0 || (c.level === 2 && c.int(0, 1) === 0);
   const answer = area ? width * height : 2 * (width + height);
@@ -500,6 +690,7 @@ function perimeter(c) {
 }
 
 function fractions(c) {
+  if (c.int(0, 4) !== 0) return fractionQuantity(c);
   const parts = c.pick(c.level === 0 ? [2, 4] : c.level === 1 ? [2, 3, 4] : [3, 4, 6, 8]);
   const shaded = c.level === 0 ? 1 : c.int(1, parts - 1);
   const answer = `${shaded}/${parts}`;
@@ -512,6 +703,7 @@ function fractions(c) {
 }
 
 function charts(c) {
+  if (c.int(0, 4) !== 0) return chartQuestions(c);
   const labels = ['Äpfel', 'Birnen', 'Bananen', 'Pflaumen'].slice(0, c.level === 0 ? 3 : 4);
   const values = labels.map(() => c.int(1, c.level === 0 ? 5 : c.level === 1 ? 10 : 20));
   const i = c.int(0, labels.length - 1);
@@ -537,6 +729,7 @@ function charts(c) {
 }
 
 function chance(c) {
+  if (c.int(0, 4) !== 0) return bagChance(c);
   if (c.level < 2) {
     const red = c.int(1, c.level === 0 ? 3 : 6), blue = c.level === 0 ? 0 : c.int(1, 5);
     const asked = c.pick(['rot', 'blau', 'grün']);
@@ -562,6 +755,43 @@ function chance(c) {
 function wordproblems(c) {
   const name = c.pick(['Mila', 'Emil', 'Lina', 'Noah', 'Sam', 'Alex']);
   if (c.level === 2) {
+    const form = c.pick(['multiply-subtract', 'multiply-add', 'add-subtract', 'add-divide', 'subtract-divide']);
+    if (form === 'multiply-add') {
+      const a = c.int(2, c.grade === 2 ? 8 : 15), b = c.int(2, c.grade === 2 ? 10 : 20);
+      const d = c.int(1, Math.min(c.limit - a * b, c.grade === 2 ? 20 : 100));
+      return { prompt: `In der Aula stehen ${a} Reihen mit je ${b} Stühlen. Dazu kommen ${d} einzelne Stühle. Wie viele Sitzplätze gibt es?`,
+        display: 'Zuerst die Reihen. Dann die zusätzlichen Plätze.', answer: String(a * b + d), unit: 'Sitzplätze',
+        hint: 'Multipliziere die Reihen mit den Stühlen pro Reihe. Addiere die einzelnen Stühle.',
+        explanation: [`${a} · ${b} = ${a * b}.`, `${a * b} + ${d} = ${a * b + d} Sitzplätze.`],
+        meta: { kind: 'wordsteps', a, b, d, form } };
+    }
+    if (form === 'add-subtract') {
+      const total = c.int(6, c.grade === 2 ? 100 : 200), a = c.int(2, total - 2), b = total - a;
+      const d = c.int(1, total - 1);
+      return { prompt: `Im Bus sitzen ${a} Menschen. An der Haltestelle steigen ${b} ein und ${d} aus. Wie viele Menschen sitzen danach im Bus?`,
+        display: 'Einsteigen bedeutet dazu. Aussteigen bedeutet weg.', answer: String(total - d), unit: 'Menschen',
+        hint: 'Addiere die Einsteigenden. Ziehe danach die Aussteigenden ab.',
+        explanation: [`${a} + ${b} = ${total}.`, `${total} − ${d} = ${total - d} Menschen.`],
+        meta: { kind: 'wordsteps', a, b, d, form } };
+    }
+    if (form === 'add-divide') {
+      const d = c.int(2, 10), each = c.int(2, c.grade === 2 ? 10 : 20), total = d * each;
+      const a = c.int(1, total - 1), b = total - a;
+      return { prompt: `Auf einem Teller liegen ${a} Kekse, auf einem zweiten ${b}. ${d} Kinder teilen alle Kekse gerecht. Wie viele bekommt jedes Kind?`,
+        display: 'Erst alle Kekse zählen. Dann gerecht verteilen.', answer: String(each), unit: 'Kekse',
+        hint: 'Addiere beide Mengen und teile die Summe durch die Zahl der Kinder.',
+        explanation: [`${a} + ${b} = ${total}.`, `${total} : ${d} = ${each} Kekse pro Kind.`],
+        meta: { kind: 'wordsteps', a, b, d, form } };
+    }
+    if (form === 'subtract-divide') {
+      const d = c.int(2, c.grade === 2 ? 8 : 12), each = c.int(2, c.grade === 2 ? 10 : 20);
+      const b = c.int(1, Math.min(20, c.limit - d * each)), a = d * each + b;
+      return { prompt: `Die Klasse sammelt ${a} Bücher. ${b} bleiben auf dem Lesetisch. Die übrigen kommen gleichmäßig auf ${d} Regalbretter. Wie viele Bücher stehen auf jedem Brett?`,
+        display: 'Zuerst die Bücher für das Regal bestimmen.', answer: String(each), unit: 'Bücher',
+        hint: 'Ziehe die Bücher auf dem Lesetisch ab. Teile den Rest durch die Zahl der Regalbretter.',
+        explanation: [`${a} − ${b} = ${a - b}.`, `${a - b} : ${d} = ${each} Bücher je Brett.`],
+        meta: { kind: 'wordsteps', a, b, d, form } };
+    }
     const boxes = c.int(3, c.grade === 2 ? 8 : 12), perBox = c.int(3, c.grade === 2 ? 10 : 20);
     const given = c.int(1, Math.min(20, boxes * perBox - 1));
     return { prompt: `${name} hat ${boxes} Schachteln mit je ${perBox} Buntstiften. ${given} Stifte werden verschenkt. Wie viele Stifte bleiben übrig?`,
@@ -572,11 +802,36 @@ function wordproblems(c) {
   }
   const operation = c.pick(c.level === 0 ? ['+', '-'] : ['+', '-', '*', '/']);
   const calc = arithmetic(c, operation);
-  const prompt = operation === '+' ? `${name} hat ${calc.a} Murmeln und bekommt ${calc.b} dazu. Wie viele Murmeln sind es jetzt?`
-    : operation === '-' ? `${name} hat ${calc.a} Murmeln und verschenkt ${calc.b}. Wie viele bleiben übrig?`
-      : operation === '*' ? `${name} füllt ${calc.a} Beutel mit jeweils ${calc.b} Murmeln. Wie viele Murmeln sind das insgesamt?`
-        : `${name} verteilt ${calc.a} Murmeln gleichmäßig auf ${calc.b} Kinder. Wie viele Murmeln bekommt jedes Kind?`;
-  return { prompt, display: 'Welche Rechnung hilft dir?', answer: String(calc.result), unit: 'Murmeln',
+  const stories = {
+    '+': [
+      [`${name} hat ${calc.a} Murmeln und bekommt ${calc.b} dazu. Wie viele Murmeln sind es jetzt?`, 'Murmeln'],
+      [`Auf dem Schulhof spielen ${calc.a} Kinder. ${calc.b} weitere kommen dazu. Wie viele Kinder spielen nun dort?`, 'Kinder'],
+      [`Ein Buch hat ${calc.a} Seiten. Das andere hat ${calc.b} Seiten mehr. Wie viele Seiten hat das zweite Buch?`, 'Seiten'],
+      [`${name} geht zuerst ${calc.a} Meter zum Tor und dann ${calc.b} Meter zum Spielplatz. Wie lang ist der ganze Weg?`, 'm'],
+      [`Im Garten blühen ${calc.a} rote und ${calc.b} gelbe Tulpen. Wie viele Tulpen sind es zusammen?`, 'Tulpen'],
+    ],
+    '-': [
+      [`${name} hat ${calc.a} Murmeln und verschenkt ${calc.b}. Wie viele bleiben übrig?`, 'Murmeln'],
+      [`Für die Feier werden ${calc.a} Becher gebraucht. ${calc.b} stehen schon bereit. Wie viele fehlen noch?`, 'Becher'],
+      [`Ein Turm ist ${calc.a} Zentimeter hoch, ein anderer ${calc.b} Zentimeter. Um wie viele Zentimeter ist der erste höher?`, 'cm'],
+      [`Ein Buch hat ${calc.a} Seiten. ${name} hat ${calc.b} Seiten gelesen. Wie viele Seiten fehlen noch?`, 'Seiten'],
+      [`Auf dem Parkplatz gibt es ${calc.a} Plätze. ${calc.b} sind belegt. Wie viele Plätze sind frei?`, 'Plätze'],
+    ],
+    '*': [
+      [`${name} füllt ${calc.a} Beutel mit jeweils ${calc.b} Murmeln. Wie viele Murmeln sind das insgesamt?`, 'Murmeln'],
+      [`Im Saal stehen ${calc.a} Reihen mit je ${calc.b} Stühlen. Wie viele Stühle stehen dort?`, 'Stühle'],
+      [`${calc.a} Kinder bekommen jeweils ${calc.b} Aufkleber. Wie viele Aufkleber werden gebraucht?`, 'Aufkleber'],
+      [`Ein Wegstück ist ${calc.b} Meter lang. ${name} geht es ${calc.a} Mal. Wie viele Meter sind das?`, 'm'],
+    ],
+    '/': [
+      [`${name} verteilt ${calc.a} Murmeln gleichmäßig auf ${calc.b} Kinder. Wie viele Murmeln bekommt jedes Kind?`, 'Murmeln'],
+      [`${calc.a} Blumen werden zu Sträußen mit je ${calc.b} Blumen gebunden. Wie viele Sträuße entstehen?`, 'Sträuße'],
+      [`Ein ${calc.a} Meter langes Seil wird in ${calc.b} gleich lange Stücke geteilt. Wie lang ist ein Stück?`, 'm'],
+      [`${calc.a} Kekse kommen in Tüten mit jeweils ${calc.b} Keksen. Wie viele Tüten werden gefüllt?`, 'Tüten'],
+    ],
+  };
+  const [prompt, unit] = c.pick(stories[operation]);
+  return { prompt, display: 'Welche Rechnung hilft dir?', answer: String(calc.result), unit,
     hint: operation === '+' ? 'Es kommt etwas dazu: Rechne plus.' : operation === '-' ? 'Es wird etwas weggegeben: Rechne minus.' : operation === '*' ? 'Gleich große Gruppen: Rechne mal.' : 'Gleichmäßig verteilen: Rechne geteilt.',
     explanation: explainArithmetic(calc), meta: { kind: 'word', ...calc } };
 }
@@ -668,31 +923,54 @@ function divisibility(c) {
 function calendar(c) {
   const days = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
   if (c.level === 0) {
-    const day = c.int(0, 6), offset = c.grade === 2 ? c.pick([1, 2, 7]) : c.int(1, 14);
-    const answer = days[(day + offset) % 7];
-    return { prompt: `Heute ist ${days[day]}. Welcher Wochentag ist in ${offset} ${offset === 1 ? 'Tag' : 'Tagen'}?`, display: 'Eine Woche hat 7 Tage.', input: 'choice', answer,
-      choices: c.shuffle([answer, ...days.filter(name => name !== answer).slice(0, 3)]), hint: 'Gehe die Wochentage der Reihe nach weiter. Nach Sonntag kommt wieder Montag.',
-      explanation: [`${offset === 7 ? 'Nach genau einer Woche ist wieder derselbe Wochentag.' : `Zähle ${offset} Tage nach ${days[day]} weiter.`}`, `Dann ist ${answer}.`],
+    const day = c.int(0, 6), distance = c.int(1, c.grade === 2 ? 14 : 20);
+    const offset = c.int(0, 1) === 0 ? distance : -distance;
+    const answer = days[((day + offset) % 7 + 7) % 7];
+    return { prompt: `Heute ist ${days[day]}. Welcher Wochentag ${offset > 0 ? 'ist in' : 'war vor'} ${distance} ${distance === 1 ? 'Tag' : 'Tagen'}?`, display: 'Eine Woche hat 7 Tage.', input: 'choice', answer,
+      choices: c.shuffle([answer, ...days.filter(name => name !== answer).slice(0, 3)]), hint: `Gehe die Wochentage der Reihe nach ${offset > 0 ? 'vorwärts' : 'rückwärts'}. Nach 7 Tagen bist du wieder beim selben Wochentag.`,
+      explanation: [`Gehe von ${days[day]} aus ${distance} Tage ${offset > 0 ? 'vorwärts' : 'zurück'}.`, `Dann ist ${answer}.`],
       meta: { kind: 'weekday', day, offset } };
   }
   const months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
-  const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const year = c.pick([2024, 2025, 2026, 2027, 2028]);
+  const leap = year % 4 === 0;
+  const daysInMonth = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   if (c.level === 1) {
     const month = c.int(0, 11);
-    return { prompt: `Wie viele Tage hat der ${months[month]} 2025?`, display: '2025 ist kein Schaltjahr.', input: 'choice', choices: ['28', '29', '30', '31'], answer: String(daysInMonth[month]),
+    const mode = c.int(0, 2);
+    if (mode === 1) {
+      const date = c.int(1, daysInMonth[month] - 1);
+      const answer = daysInMonth[month] - date;
+      return { prompt: `Heute ist der ${date}. ${months[month]} ${year}. Wie viele Tage vergehen noch bis zum Monatsende?`,
+        display: `Der ${months[month]} hat ${daysInMonth[month]} Tage. Der heutige Tag zählt nicht mit.`, answer: String(answer), unit: 'Tage',
+        hint: 'Ziehe das heutige Tagesdatum von der Anzahl der Monatstage ab.',
+        explanation: [`${daysInMonth[month]} − ${date} = ${answer}. Bis zum Monatsende vergehen ${answer} Tage.`],
+        meta: { kind: 'monthremaining', month, year, date } };
+    }
+    if (mode === 2) {
+      const distance = c.int(1, 6), offset = c.int(0, 1) === 0 ? distance : -distance;
+      const target = (month + offset + 12) % 12, answer = months[target];
+      return { prompt: `Jetzt ist ${months[month]}. Welcher Monat ${offset > 0 ? 'kommt in' : 'war vor'} ${distance} ${distance === 1 ? 'Monat' : 'Monaten'}?`,
+        display: 'Ein Jahr hat 12 Monate.', answer, input: 'choice', choices: c.shuffle([answer, ...months.filter(value => value !== answer).slice(0, 3)]),
+        hint: `Gehe in der Monatsfolge ${offset > 0 ? 'vorwärts' : 'rückwärts'}. Nach Dezember kommt Januar.`,
+        explanation: [`Von ${months[month]} aus ${distance} ${distance === 1 ? 'Monat' : 'Monate'} ${offset > 0 ? 'weiter' : 'zurück'}: ${answer}.`],
+        meta: { kind: 'monthshift', month, offset } };
+    }
+    return { prompt: `Wie viele Tage hat der ${months[month]} ${year}?`, display: `${year} ist ${leap ? 'ein' : 'kein'} Schaltjahr.`, input: 'choice', choices: ['28', '29', '30', '31'], answer: String(daysInMonth[month]),
       hint: 'April, Juni, September und November haben 30 Tage. Februar hat meist 28. Die übrigen Monate haben 31.',
-      explanation: [`Der ${months[month]} 2025 hat ${daysInMonth[month]} Tage.`], meta: { kind: 'monthdays', month, year: 2025 } };
+      explanation: [`Der ${months[month]} ${year} hat ${daysInMonth[month]} Tage.`, ...(month === 1 && leap ? ['In einem Schaltjahr hat der Februar einen zusätzlichen Tag.'] : [])], meta: { kind: 'monthdays', month, year } };
   }
   const month = c.int(0, 10), start = c.int(22, daysInMonth[month] - 1), end = c.int(1, 9);
   const duration = daysInMonth[month] - start + end;
-  return { prompt: `Wie viele Tage vergehen vom ${start}. ${months[month]} bis zum ${end}. ${months[month + 1]} 2025?`, display: 'Zähle die vergangenen Tage. Der Starttag zählt nicht mit.', answer: String(duration), unit: 'Tage',
+  return { prompt: `Wie viele Tage vergehen vom ${start}. ${months[month]} bis zum ${end}. ${months[month + 1]} ${year}?`, display: 'Zähle die vergangenen Tage. Der Starttag zählt nicht mit.', answer: String(duration), unit: 'Tage',
     hint: `Der ${months[month]} hat ${daysInMonth[month]} Tage. Rechne erst bis zum Monatsende, dann weiter.`,
     explanation: [`Bis zum letzten Tag im ${months[month]}: ${daysInMonth[month]} − ${start} = ${daysInMonth[month] - start} Tage.`,
       `Dann kommen ${end} Tage dazu: ${daysInMonth[month] - start} + ${end} = ${duration} Tage.`],
-    meta: { kind: 'calendarduration', month, start, end, year: 2025 } };
+    meta: { kind: 'calendarduration', month, start, end, year } };
 }
 
 function area(c) {
+  if (c.int(0, 4) !== 0) return areaPieces(c);
   const width = c.int(2, c.level === 0 ? 4 : c.grade === 2 ? 10 : 15), height = c.int(2, c.level === 0 ? 3 : c.grade === 2 ? 8 : 12);
   if (c.level === 2) {
     const secondWidth = c.int(2, c.grade === 2 ? 10 : 15), secondHeight = c.int(2, c.grade === 2 ? 8 : 12);
@@ -711,6 +989,7 @@ function area(c) {
 }
 
 function spatial(c) {
+  if (c.int(0, 4) !== 0) return gridJourney(c);
   const labels = c.shuffle(['Sonne', 'Blume', 'Stern', 'Ball']);
   const row = c.int(0, 1), col = c.int(0, 1), horizontal = c.int(0, 1) === 0;
   const backwards = c.level > 0 && c.int(0, 1) === 0;
@@ -733,6 +1012,7 @@ function spatial(c) {
 }
 
 function combinations(c) {
+  if (c.int(0, 4) !== 0) return branchingChoices(c);
   const a = c.int(2, c.level === 0 ? 2 : c.level === 1 ? 3 : 5), b = c.int(2, c.level === 0 ? 3 : c.level === 1 ? 4 : 5);
   const extra = c.grade === 3 && c.level === 2 ? c.int(2, 3) : 1;
   return { prompt: `Im Eisladen gibt es ${a} Sorten Eis und ${b} Sorten Streusel${extra > 1 ? ` sowie ${extra} verschiedene Waffeln` : ''}. Du wählst genau eine Eissorte und eine Streuselsorte${extra > 1 ? ' und eine Waffel' : ''}. Wie viele Kombinationen gibt es?`,

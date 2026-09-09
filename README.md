@@ -8,11 +8,15 @@ Mathe üben, kleine Erfolge feiern und neugierig bleiben: Matheabenteuer ist ein
 2. Klasse, Thema und Schwierigkeit auswählen. Auch Drittklässler dürfen Grundlagen aus Klasse 2 wiederholen.
 3. Eine Runde mit fünf, zehn oder zwanzig Aufgaben beginnen. Antworten lassen sich über große Tasten oder die Tastatur eingeben.
 4. Bei Unsicherheit die Hilfe öffnen und den Rechenweg gemeinsam ansehen. Danach weiterprobieren.
-5. Gesammelte Sterne, Münzen und Sticker im selben Browser wiederfinden. Im Entdeckerladen lassen sich mit Spielmünzen neue Begleiter freischalten.
+5. Gesammelte Sterne und Sticker im selben Browser wiederfinden. Im Entdeckerladen lassen sich Sterne gegen neue Begleiter einlösen.
 
-Die Aufgaben werden aus passenden Zahlen und Vorlagen immer wieder neu erzeugt. Eine neue Runde liefert neue Übungen; einzelne Aufgaben können sich wiederholen. Es gibt keinen Zeitdruck und keine öffentliche Rangliste.
+Die Aufgaben werden aus passenden Zahlen und vielen unterschiedlichen Aufgabenarten neu erzeugt. In jeder Runde und auf jedem Arbeitsblatt kommt jede sichtbare Aufgabe höchstens einmal vor. Beispiele, Runden und Arbeitsblätter verwenden dieselbe Auswahl und berücksichtigen die letzten 1.000 Aufgaben des jeweiligen Profils, auch nach dem Neuladen. Neue Aufgaben werden bevorzugt; bei engen, bereits durchgeübten Auswahlen kommen die am längsten zurückliegenden Aufgaben wieder an die Reihe. Nur „Knifflige Aufgaben wiederholen“ zeigt auf Wunsch gezielt bekannte Aufgaben. Es gibt keinen Zeitdruck und keine öffentliche Rangliste.
 
-**Fine, die Fledermaus**, begleitet jedes neue Profil von Anfang an kostenlos. Ihre eigene SVG-Illustration gehört zum Projekt und wird direkt mit der Website geladen. Weitere Begleiter lassen sich später mit erspielten Münzen auswählen.
+**Programmiert von Stephan Mühl.**
+
+**Fine, die Fledermaus**, begleitet jedes neue Profil von Anfang an kostenlos. Ihre eigene SVG-Illustration gehört zum Projekt und wird direkt mit der Website geladen. Weitere Begleiter lassen sich später mit erspielten Sternen auswählen.
+
+Der gewählte Begleiter begrüßt das Kind auf der Startseite, steht beim Üben direkt oberhalb der Aufgabe und feiert den Rundenabschluss mit. Auf dem Smartphone erscheinen zunächst sechs kompakte Themenkarten; **Alle Themen anzeigen** und die Lernbereichsfilter erschließen die übrigen Themen. Die Zahlentasten bleiben mindestens 44 × 44 Pixel groß.
 
 ## Was Kinder üben können
 
@@ -30,9 +34,19 @@ Für den Einstieg eine kurze Runde und eine gut passende Schwierigkeit wählen. 
 
 Plättchen, Bausteine, Spielgeld, Papier und ein Lineal ergänzen die Bildschirmaufgaben. Das Kind kann beispielsweise eine Geteiltaufgabe mit Gegenständen legen oder einen eigenen Lösungsweg aufzeichnen. Bei schriftlichen Verfahren die in der Schule verwendete Schreibweise gemeinsam mit der Lehrkraft abstimmen.
 
-Sterne zeigen Aktivität und Fortschritt innerhalb dieses Spiels. Sie sind weder eine Schulnote noch eine Diagnose. Wenn Schwierigkeiten trotz Übung bestehen bleiben, helfen die konkreten Aufgaben und Lösungswege als Gesprächsgrundlage mit der Lehrkraft.
+Sterne sind ein einlösbares Spielguthaben. Sie sind weder eine Schulnote noch eine Diagnose. Wenn Schwierigkeiten trotz Übung bestehen bleiben, helfen die konkreten Aufgaben und Lösungswege als Gesprächsgrundlage mit der Lehrkraft.
 
-Eine beim ersten Versuch richtig gelöste Aufgabe bringt zehn Sterne und zwei Spielmünzen, nach weiteren Versuchen fünf Sterne und eine Spielmünze. Tipps kosten nichts. **Gemeinsam lösen** erklärt den Weg ohne Belohnung; solche Aufgaben können am Ende der Runde erneut geübt werden. Sticker werden über die gesammelten Sterne freigeschaltet. Begleiter kosten ausschließlich erspielte Münzen; echtes Geld und Käufe sind nicht vorgesehen. Alle Lernwelten bleiben jederzeit frei zugänglich.
+Jede selbst gelöste Aufgabe bringt **genau einen Stern**, auch nach mehreren Versuchen. Es gibt nur diese eine Währung. Tipps kosten nichts. **Gemeinsam lösen** erklärt den Weg ohne Belohnung; solche Aufgaben können am Ende der Runde erneut geübt werden. Im Entdeckerladen werden die angegebenen Sterne beim Freischalten eines Begleiters vom Guthaben abgezogen. Sticker richten sich nach der Zahl gelöster Aufgaben und bleiben beim Einlösen erhalten. Echtes Geld und Käufe sind nicht vorgesehen. Alle Lernwelten bleiben jederzeit frei zugänglich.
+
+Alte lokale Profile und Sicherungsdateien werden automatisch in Version 2 übernommen. Vorhandenes Münzguthaben wird einmalig halbiert und auf ganze Sterne aufgerundet; bei älteren Dateien ohne Münzfeld werden je zehn alte Punkte zu einem Stern. Freigeschaltete Begleiter, Lernfortschritt und Profile bleiben erhalten. Neue Spielstände enthalten ausschließlich das Stern-Guthaben und werden beim nächsten Laden nicht erneut umgerechnet.
+
+## Als App und im Vollbild verwenden
+
+Über **Als App installieren** am Seitenende lässt sich die Browserinstallation starten oder die passende Anleitung öffnen. Auf iPhone und iPad führt der Weg über das Teilen-Menü und **Zum Home-Bildschirm**. Die installierte App startet in einem eigenen Fenster ohne die normale Browserleiste. Der Knopf **⛶** oben rechts schaltet in unterstützenden Browsern zusätzlich das Vollbild ein und wieder aus. Wo diese Funktion fehlt, öffnet er die Anleitung für den Startbildschirm. Die zugrunde liegenden Browserfunktionen sind in den [MDN-Installationshinweisen](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable) und der [Fullscreen-API-Dokumentation](https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullscreen) beschrieben.
+
+Nach dem ersten vollständigen Laden werden die Dateien der Lernseite einschließlich Fine und der Aufgabenerzeugung lokal für die **Offline-Nutzung** gespeichert. Im Installationsdialog steht, sobald das Offline-Üben bereit ist. Externe Links und gegebenenfalls online arbeitende Vorlesestimmen benötigen weiterhin Internet. Auf einigen Geräten hat eine installierte App einen eigenen Speicherbereich; bei Bedarf lässt sich der Spielstand über den Elternbereich übertragen.
+
+Eine neue Version unterbricht keine laufende Runde. Wenn ein Update bereitsteht, erscheint am Seitenende **Neue Version laden**. Nach der Runde oder einer Pause übernimmt dieser Knopf die neue Version; der Spielstand bleibt erhalten. Für die Installation und den Offline-Speicher wird HTTPS benötigt, beim lokalen Entwickeln ist auch `localhost` beziehungsweise `127.0.0.1` zulässig.
 
 ## Fortschritt und Privatsphäre
 
@@ -63,6 +77,10 @@ npm test
 ```
 
 Bei Änderungen zusätzlich echte Übungen im Browser ausprobieren: richtige und falsche Antworten, Hilfen, nächste Runde, Klassenwechsel, Speichern nach einem Neuladen, Export und Import sowie die Druckvorschau. Tablet-Hochformat und ein schmaler Smartphone-Bildschirm sollten ebenfalls geprüft werden.
+
+Die wiederholbaren Browserprüfungen laufen bei gestartetem lokalen Server mit `npm run test:mobile` und `npm run test:practice`. Dafür müssen Playwright und Chrome verfügbar sein; Playwright kann über `NODE_PATH` oder `PLAYWRIGHT_MODULE` eingebunden werden. `PLAYWRIGHT_CHANNEL` wählt bei Bedarf einen anderen installierten Browser. Für einen abweichenden Server setzt man `MOBILE_TEST_URL` beziehungsweise `APP_URL`. Die Smartphone-Prüfung legt Bildschirmbilder unter `test-results/mobile` ab; dieser Ordner wird nicht ins Repository übernommen.
+
+`npm run test:pwa` startet einen eigenen Testserver und prüft die App sowohl im Hauptverzeichnis als auch unter `/matheabenteuer/`: Manifest und Icons, Offline-Üben und Neuladen, Vollbild, Installationsdialog, Updates, Spielstandmigration und Einlösen von Sternen. Bei Änderungen an Anwendungsdateien die Versionskennung `VERSION` in `sw.js` erhöhen, damit vorhandene Installationen eine vollständige neue Dateiversion erhalten. Neue Dateien, die offline benötigt werden, außerdem in `FILES` aufnehmen.
 
 ## Auf GitHub Pages bereitstellen
 

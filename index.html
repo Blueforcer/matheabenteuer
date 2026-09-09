@@ -2,12 +2,18 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#fff8e8">
+  <meta name="author" content="Stephan Mühl">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Matheabenteuer">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="description" content="Mathe entdecken statt verzweifeln: kostenlose, bunte Übungen für Klasse 2 und 3. Mit Rechenhilfen, drei Schwierigkeitsstufen und Sternen. Ohne Anmeldung.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
   <title>Matheabenteuer · Du kannst das!</title>
   <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./assets/icon-192.png">
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./extras.css">
   <script type="module" src="./js/app.js"></script>
@@ -17,11 +23,11 @@
   <header class="site-header shell no-print">
     <a class="brand" href="#home" aria-label="Matheabenteuer Startseite"><span class="brand-icon" aria-hidden="true">m<span>✦</span></span><span>mathe<span class="brand-accent">abenteuer</span><small>KLEINE SCHRITTE. GROSSE ENTDECKUNGEN.</small></span></a>
     <nav class="main-nav" aria-label="Hauptnavigation"><button class="nav-button active" data-view="home">Entdecken</button><button class="nav-button" data-view="progress">Meine Schätze</button><button class="nav-button" data-view="parents">Für Eltern</button></nav>
-    <button id="profile-button" class="header-score" aria-label="Profil und Sterne"><span id="header-avatar">🦇</span><span id="header-xp">0 ★</span></button>
+    <div class="header-actions"><button id="profile-button" class="header-score" aria-label="Profil und Sterne"><span id="header-avatar">🦇</span><span id="header-stars">0 ★</span></button><button id="fullscreen-button" class="fullscreen-button" aria-label="Vollbild einschalten" title="Vollbild einschalten" aria-pressed="false">⛶</button></div>
   </header>
   <div id="storage-warning" class="shell storage-warning" role="status" hidden>Dein Browser kann gerade nicht speichern. Deine Sterne bleiben nur so lange erhalten, wie diese Seite geöffnet ist.</div>
   <main id="main" class="shell" tabindex="-1"></main>
-  <footer class="site-footer shell no-print"><span>Mit Neugier wird aus „Kann ich nicht“ ein <strong>„Kann ich schon!“</strong></span><div><button class="link-button" data-view="parents">Eltern & Datenschutz</button><a href="https://github.com/Blueforcer/matheabenteuer" target="_blank" rel="noopener noreferrer">Quellcode ↗</a></div></footer>
+  <footer class="site-footer shell no-print"><span>Mit Neugier wird aus „Kann ich nicht“ ein <strong>„Kann ich schon!“</strong><br>Programmiert von <strong>Stephan Mühl</strong></span><div><button class="link-button" id="install-button">Als App installieren</button><button class="link-button" id="update-app" hidden>Neue Version laden</button><button class="link-button" data-view="parents">Eltern & Datenschutz</button><a href="https://github.com/Blueforcer/matheabenteuer" target="_blank" rel="noopener noreferrer">Quellcode ↗</a></div></footer>
   <dialog id="modal" class="modal"><div class="modal-head"><h2 id="modal-title"></h2><button id="modal-close" class="button ghost" aria-label="Fenster schließen">✕</button></div><div id="modal-body" class="modal-body"></div></dialog>
   <div id="toast" class="toast" role="status" hidden></div>
   <div id="print-sheet" class="print-sheet"></div>

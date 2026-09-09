@@ -12,20 +12,25 @@ export const SHOP = [
 const count = (n, max = 1e9) => Number.isFinite(n) ? Math.min(max, Math.max(0, Math.floor(n))) : 0;
 const uid = () => globalThis.crypto?.randomUUID?.() || `p-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 export function newProfile(name = 'Mathe-Fan', avatar = '🦇') {
-  return { id: uid(), name: String(name).trim().slice(0, 24) || 'Mathe-Fan', avatar: avatars.includes(avatar) ? avatar : '🦇', xp: 0, coins: 0, owned: ['fine'], companion: 'fine', solved: 0, rounds: 0, stats: {}, days: {} };
+  return { id: uid(), name: String(name).trim().slice(0, 24) || 'Mathe-Fan', avatar: avatars.includes(avatar) ? avatar : '🦇', stars: 0, owned: ['fine'], companion: 'fine', solved: 0, rounds: 0, stats: {}, days: {}, exerciseHistory: [] };
 }
 export function initialState() {
   const p = newProfile();
-  return { version: 1, active: p.id, profiles: [p], settings: { grade: 2, difficulty: 'easy', table: 0, length: 10, category: 'Alle' } };
+  return { version: 2, active: p.id, profiles: [p], settings: { grade: 2, difficulty: 'easy', table: 0, length: 10, category: 'Alle' } };
 }
 export function validateState(raw) {
-  if (!raw || raw.version !== 1 || !Array.isArray(raw.profiles) || !raw.profiles.length || raw.profiles.length > 12) throw new Error('Diese Datei ist kein passender Matheabenteuer-Spielstand.');
+  if (!raw || ![1, 2].includes(raw.version) || !Array.isArray(raw.profiles) || !raw.profiles.length || raw.profiles.length > 12) throw new Error('Diese Datei ist kein passender Matheabenteuer-Spielstand.');
   const seen = new Set();
   const profiles = raw.profiles.map(p => {
     if (!p || typeof p.name !== 'string' || typeof p.id !== 'string' || !p.id || p.id.length > 100 || seen.has(p.id)) throw new Error('Die Profile in der Datei sind ungültig.');
     seen.add(p.id);
-    const clean = { ...newProfile(p.name, p.avatar), id: p.id, xp: count(p.xp), solved: count(p.solved), rounds: count(p.rounds) };
-    clean.coins = count(p.coins);
+    const clean = { ...newProfile(p.name, p.avatar), id: p.id, solved: count(p.solved), rounds: count(p.rounds) };
+    // Keep the existing storage key so old local profiles are discovered. Only
+    // version 1 is converted; saving/exporting version 2 makes migration idempotent.
+    clean.stars = raw.version === 1
+      ? ('coins' in p ? Math.ceil(count(p.coins) / 2) : Math.floor(count(p.xp) / 10)) : count(p.stars);
+    clean.exerciseHistory = Array.isArray(p.exerciseHistory)
+      ? [...new Set(p.exerciseHistory.slice(-1000).filter(key => typeof key === 'string' && /^[a-f0-9]{16}$/.test(key)))] : [];
     clean.owned = [...new Set(['fine', ...(Array.isArray(p.owned) ? p.owned.filter(id=>SHOP.some(item=>item.id===id)) : [])])];
     clean.companion = clean.owned.includes(p.companion) ? p.companion : 'fine';
     for (const [key, value] of Object.entries(p.stats || {}).slice(0, 100)) {
@@ -37,7 +42,7 @@ export function validateState(raw) {
     return clean;
   });
   const s = raw.settings || {};
-  return { version: 1, profiles, active: profiles.some(p => p.id === raw.active) ? raw.active : profiles[0].id, settings: { grade: s.grade === 3 ? 3 : 2, difficulty: ['easy','medium','hard'].includes(s.difficulty) ? s.difficulty : 'easy', table: count(s.table, 10), length: [5,10,20].includes(s.length) ? s.length : 10, category: ['Alle','Rechnen','Zahlen','Alltag','Entdecken'].includes(s.category) ? s.category : 'Alle' } };
+  return { version: 2, profiles, active: profiles.some(p => p.id === raw.active) ? raw.active : profiles[0].id, settings: { grade: s.grade === 3 ? 3 : 2, difficulty: ['easy','medium','hard'].includes(s.difficulty) ? s.difficulty : 'easy', table: count(s.table, 10), length: [5,10,20].includes(s.length) ? s.length : 10, category: ['Alle','Rechnen','Zahlen','Alltag','Entdecken'].includes(s.category) ? s.category : 'Alle' } };
 }
 export function readState(storage) {
   try { const raw = storage.getItem(STORAGE_KEY); return { state: raw ? validateState(JSON.parse(raw)) : initialState(), available: true }; }
@@ -51,14 +56,14 @@ export function recordAnswer(profile, topic, firstTry, award = true) {
   const stat = profile.stats[topic] ||= { attempts: 0, correct: 0, solved: 0 };
   stat.attempts += 1;
   if (firstTry && award) stat.correct += 1;
-  const points = award ? (firstTry ? 10 : 5) : 0;
-  if (award) { stat.solved += 1; profile.solved += 1; profile.xp += points; profile.coins += firstTry ? 2 : 1; profile.days[localDay()] = (profile.days[localDay()] || 0) + 1; }
-  return points;
+  const stars = award ? 1 : 0;
+  if (award) { stat.solved += 1; profile.solved += 1; profile.stars += stars; profile.days[localDay()] = (profile.days[localDay()] || 0) + 1; }
+  return stars;
 }
 export function purchaseCompanion(profile, id) {
   const item = SHOP.find(item=>item.id===id);
-  if(!item || profile.owned.includes(id) || profile.coins < item.price) return false;
-  profile.coins -= item.price;
+  if(!item || profile.owned.includes(id) || profile.stars < item.price) return false;
+  profile.stars -= item.price;
   profile.owned.push(id);
   profile.companion = id;
   return true;

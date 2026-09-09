@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TOPICS, DIFFICULTIES, generateExercise, checkAnswer } from '../js/engine.js';
+import { discoveryAnswer } from './discovery-oracles.js';
 
 function seeded(seed) {
   let state = seed >>> 0;
@@ -20,8 +21,11 @@ function compute({ a, b, operation }) {
 // This oracle derives each result from the task data independently of the supplied answer.
 function expectedAnswer(exercise) {
   const m = exercise.meta;
+  const discovery = discoveryAnswer(exercise);
+  if (discovery !== undefined) return discovery;
   switch (m.kind) {
     case 'arithmetic': case 'word': case 'written': return compute(m);
+    case 'arithmeticsplit': return m.operation === '*' ? m.first * m.b + m.second * m.b : m.first / m.b + m.second / m.b;
     case 'remainder': return `${Math.floor(m.dividend / m.divisor)} Rest ${m.dividend % m.divisor}`;
     case 'missing': return m[m.blank];
     case 'operators': {
@@ -40,17 +44,34 @@ function expectedAnswer(exercise) {
     case 'double': return m.isDouble ? m.number * 2 : m.number / 2;
     case 'coins': return m.coins.reduce((total, coin) => total + coin, 0);
     case 'change': return (m.paid - m.price) / m.scale;
+    case 'moneycalc': return (m.mode === 1 ? m.total : m.total - m.first) / m.scale;
     case 'clock': return `${m.hour}:${String(m.minute).padStart(2, '0')} Uhr`;
     case 'duration': return m.end - m.start;
+    case 'durationhours': return (m.end - m.start) / 60;
+    case 'clockshift': {
+      const value = m.seekStart ? m.start : m.end;
+      return `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')} Uhr`;
+    }
     case 'lengthconvert': return m.metres * 100 + m.centimetres;
+    case 'lengthrest': return m.centimetres % 100;
+    case 'lengthcompare': case 'capacitycompare': return m.a < m.b ? '<' : m.a > m.b ? '>' : '=';
     case 'lengthsum': return m.subtract ? m.a : m.a + m.b;
-    case 'weightunit': return { 'eine Büroklammer': 'g', 'ein Kind': 'kg', 'ein Apfel': 'g', 'ein Fahrrad': 'kg' }[m.object];
+    case 'weightunit': {
+      const gramObjects = ['eine Büroklammer', 'ein Apfel', 'ein Teebeutel', 'ein Brief', 'eine Tafel Schokolade', 'eine Erdbeere', 'ein Hühnerei', 'eine Scheibe Brot', 'ein Radiergummi', 'ein Bleistift', 'eine Münze', 'ein Tennisball'];
+      const kiloObjects = ['ein Kind', 'ein Fahrrad', 'eine Katze', 'ein großer Hund', 'ein voller Schulranzen', 'ein Reisekoffer', 'eine Waschmaschine', 'ein Stuhl', 'ein Sack Kartoffeln', 'ein Kürbis', 'ein Baby', 'ein Pony'];
+      assert.ok([...gramObjects, ...kiloObjects].includes(m.object), `Unknown weight example: ${m.object}`);
+      return gramObjects.includes(m.object) ? 'g' : 'kg';
+    }
     case 'weights': return m.total - m.part;
+    case 'weightsum': return m.a + m.b;
+    case 'weightcompare': return m.leftGrams < m.rightGrams ? '<' : m.leftGrams > m.rightGrams ? '>' : '=';
     case 'weightconvert': return m.toGrams ? m.grams : m.grams / 1000;
     case 'weightmixed': return m.firstGrams + m.addedGrams;
     case 'capacityunit': return m.small ? 'Milliliter (ml)' : 'Liter (l)';
     case 'capacitydivision': return m.total / m.glass;
     case 'capacitysum': return m.a + m.b;
+    case 'capacitydifference': return m.total - m.part;
+    case 'capacityconvert': return m.toMl ? m.millilitres : m.millilitres / 1000;
     case 'shapename': return { triangle: 'Dreieck', square: 'Quadrat', rectangle: 'Rechteck', circle: 'Kreis' }[m.name];
     case 'solidname': return { cube: 'Würfel', cuboid: 'Quader', sphere: 'Kugel', cylinder: 'Zylinder' }[m.name];
     case 'solidcount': return m.property === 'faces' ? 6 : ['cube', 'cuboid'].includes(m.name) ? 8 : 0;
@@ -64,12 +85,20 @@ function expectedAnswer(exercise) {
     case 'chance': return m.count === 0 ? 'Unmöglich' : m.count === m.red + m.blue ? 'Sicher' : 'Möglich, aber nicht sicher';
     case 'combinations': return m.shirts * m.trousers;
     case 'wordmulti': return m.boxes * m.perBox - m.given;
+    case 'wordsteps': return ({
+      'multiply-add': m.a * m.b + m.d,
+      'add-subtract': m.a + m.b - m.d,
+      'add-divide': (m.a + m.b) / m.d,
+      'subtract-divide': (m.a - m.b) / m.d,
+    })[m.form];
     case 'order': return m.brackets ? (m.a + m.b) * m.d : m.a + m.b * m.d;
     case 'parity': return m.number % 2 === 0 ? 'Gerade' : 'Ungerade';
     case 'digitsum': return String(m.number).split('').reduce((total, digit) => total + Number(digit), 0);
     case 'divisibility': return m.number % m.divisor === 0 ? 'Ja' : 'Nein';
-    case 'weekday': return ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'][(m.day + m.offset) % 7];
+    case 'weekday': return ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'][((m.day + m.offset) % 7 + 7) % 7];
     case 'monthdays': return new Date(Date.UTC(m.year, m.month + 1, 0)).getUTCDate();
+    case 'monthremaining': return new Date(Date.UTC(m.year, m.month + 1, 0)).getUTCDate() - m.date;
+    case 'monthshift': return ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'][(m.month + m.offset + 12) % 12];
     case 'calendarduration': return (Date.UTC(m.year, m.month + 1, m.end) - Date.UTC(m.year, m.month, m.start)) / 86_400_000;
     case 'area': return m.width * m.height;
     case 'areacomparison': {
@@ -236,11 +265,59 @@ test('weight conversions practice both directions and mixed units', () => {
   const medium = Array.from({ length: 250 }, (_, seed) => generateExercise({ topic: 'weights', grade: 3, difficulty: 'medium' }, seeded(seed)));
   assert.ok(medium.some(exercise => exercise.meta.kind === 'weightconvert' && exercise.meta.toGrams));
   assert.ok(medium.some(exercise => exercise.meta.kind === 'weightconvert' && !exercise.meta.toGrams));
-  for (let seed = 0; seed < 100; seed += 1) {
+  const hardKinds = new Set();
+  for (let seed = 0; seed < 300; seed += 1) {
     const exercise = generateExercise({ topic: 'weights', grade: 3, difficulty: 'hard' }, seeded(seed));
-    assert.equal(exercise.meta.kind, 'weightmixed');
-    assert.ok(Number(exercise.answer) <= 1000);
+    hardKinds.add(exercise.meta.kind);
+    if (exercise.input === 'number') assert.ok(Number(exercise.answer.replace(',', '.')) <= 1000);
     verifyExercise(exercise, 3);
+  }
+  for (const kind of ['weightmixed', 'weightconvert', 'weights', 'weightcompare']) assert.ok(hardKinds.has(kind), `Missing weight task: ${kind}`);
+});
+
+test('every everyday topic offers over 100 different mathematical tasks at every level', () => {
+  for (const topic of ['money', 'time', 'lengths', 'weights', 'capacity', 'wordproblems', 'calendar']) {
+    for (const grade of [2, 3]) for (const { id: difficulty } of DIFFICULTIES) {
+      const content = new Set();
+      for (let seed = 0; seed < 2000; seed += 1) {
+        const exercise = generateExercise({ topic, grade, difficulty }, seeded(seed));
+        // IDs, names, shuffled answers and incidental years cannot inflate this count.
+        // The metadata describes the quantities and mathematical question being asked.
+        const { year: _year, ...mathematicalTask } = exercise.meta;
+        content.add(JSON.stringify(mathematicalTask));
+        verifyExercise(exercise, grade);
+      }
+      assert.ok(content.size >= 100, `${topic}/${grade}/${difficulty} has only ${content.size} distinct mathematical tasks`);
+    }
+  }
+});
+
+test('easy weights mix many familiar objects with calculation and comparison within the number range', () => {
+  const objects = new Set(), kinds = new Set(), calculations = new Set();
+  for (let seed = 0; seed < 3000; seed += 1) {
+    const exercise = generateExercise({ topic: 'weights', grade: 2, difficulty: 'easy' }, seeded(seed));
+    const m = exercise.meta;
+    kinds.add(m.kind);
+    if (m.kind === 'weightunit') objects.add(m.object);
+    else {
+      calculations.add(JSON.stringify(m));
+      for (const value of Object.values(m).filter(value => typeof value === 'number')) assert.ok(value >= 0 && value <= 20);
+    }
+  }
+  assert.equal(objects.size, 24);
+  for (const kind of ['weightunit', 'weightsum', 'weights', 'weightcompare']) assert.ok(kinds.has(kind));
+  assert.ok(calculations.size >= 300, `Expected hundreds of quantitative weight tasks, got ${calculations.size}`);
+});
+
+test('hard stories practice all five different two-step operations', () => {
+  for (const grade of [2, 3]) {
+    const forms = new Set();
+    for (let seed = 0; seed < 500; seed += 1) {
+      const exercise = generateExercise({ topic: 'wordproblems', grade, difficulty: 'hard' }, seeded(seed));
+      forms.add(exercise.meta.kind === 'wordmulti' ? 'multiply-subtract' : exercise.meta.form);
+      assert.ok(Number(exercise.answer) <= (grade === 2 ? 100 : 1000));
+    }
+    assert.deepEqual([...forms].sort(), ['add-divide', 'add-subtract', 'multiply-add', 'multiply-subtract', 'subtract-divide']);
   }
 });
 
@@ -263,7 +340,8 @@ test('difficulty changes arithmetic scale and task structure', () => {
   assert.equal(generateExercise({ topic: 'placevalue', grade: 3, difficulty: 'easy' }, seeded(4)).meta.kind, 'placevalue');
   assert.equal(generateExercise({ topic: 'placevalue', grade: 3, difficulty: 'medium' }, seeded(4)).meta.kind, 'buildnumber');
   assert.equal(generateExercise({ topic: 'placevalue', grade: 3, difficulty: 'hard' }, seeded(4)).meta.kind, 'neighbor');
-  assert.equal(generateExercise({ topic: 'time', grade: 3, difficulty: 'hard' }, seeded(4)).meta.kind, 'duration');
+  const timeKinds = new Set(Array.from({ length: 100 }, (_, seed) => generateExercise({ topic: 'time', grade: 3, difficulty: 'hard' }, seeded(seed)).meta.kind));
+  assert.ok(timeKinds.has('duration') && timeKinds.has('clockshift'));
 });
 
 test('normalization accepts exact decimal equivalents without evaluating input', () => {

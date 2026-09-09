@@ -169,8 +169,8 @@ label[for='import-data']:has(+ .file-input:focus-visible) { outline: 3px solid #
 .spatial-grid { display: grid; gap: 4px; width: min(330px, 100%); margin: 20px auto; padding: 9px; border-radius: 14px; background: #e5edde; }
 .spatial-grid > span { display: grid; place-items: center; min-width: 0; aspect-ratio: 1; background: #fffdf8; border: 1px solid #d5dece; border-radius: 7px; font-size: 1.2rem; }
 
-/* Spend earned coins on a companion, and choose a small next step. */
-.coin-pill { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 11px; border: 1px solid #efd68d; border-radius: 13px; background: #fff1bb; color: #8a6114; font-size: .8rem; font-weight: 900; white-space: nowrap; }
+/* Redeem earned stars for a companion, and choose a small next step. */
+.star-pill { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 11px; border: 1px solid #efd68d; border-radius: 13px; background: #fff1bb; color: #8a6114; font-size: .8rem; font-weight: 900; white-space: nowrap; }
 .shop-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 22px 0 34px; }
 .shop-item { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; padding: 23px 16px 19px; border: 1px solid #e2e6da; border-radius: 21px; background: #fffdf6; }
 .shop-item .reward-emoji, .shop-item .shop-emoji { display: block; font-size: 3rem; line-height: 1.2; margin-bottom: 15px; }
@@ -316,7 +316,7 @@ label[for='import-data']:has(+ .file-input:focus-visible) { outline: 3px solid #
   .mission-path { padding: 21px 14px; gap: 13px; }
   .mission-node { min-width: 64px; max-width: 110px; padding: 11px; font-size: .7rem; }
   .daily-goal { padding: 16px; gap: 11px; }
-  .coin-pill { font-size: .72rem; padding: 6px 9px; }
+  .star-pill { font-size: .72rem; padding: 6px 9px; }
 }
 @media (max-width: 370px) {
   .brand { font-size: .93rem; }
@@ -331,6 +331,111 @@ label[for='import-data']:has(+ .file-input:focus-visible) { outline: 3px solid #
   .practice-actions .button { font-size: .66rem; padding-inline: 8px; }
   .practice-top > .pill { max-width: 61%; }
   .topic-card { min-height: 230px; }
+}
+
+/* Keep the chosen friend beside the task, with a calmer first screen on phones. */
+.companion-banner { display: flex; align-items: center; gap: 13px; width: min(800px, 100%); margin: 14px auto; padding: 10px 17px; border-radius: 18px; background: #f0edf8; color: #514568; text-align: left; }
+.companion-banner > .fine-portrait { width: 66px; height: 52px; flex: 0 0 66px; margin: 0; }
+.companion-banner > .reward-emoji { width: 66px; flex: 0 0 66px; font-size: 2.5rem; line-height: 1; margin: 0; text-align: center; }
+.companion-banner > span:last-child { min-width: 0; }
+.companion-banner strong, .companion-message { display: block; font-size: .85rem; line-height: 1.4; }
+.companion-message { font-size: .78rem; }
+.companion-hero { display: grid; place-content: center; }
+.companion-hero > .reward-emoji { font-size: 10rem; margin: 0; }
+.topic-more { display: none; }
+.round-score, #header-stars, .stat strong { font-variant-numeric: tabular-nums; }
+.exercise-prompt, .companion-banner strong { text-wrap: balance; }
+.equation-description { font-size: 1.1rem; font-weight: 600; color: var(--ink-soft); }
+.summary-card .companion-banner { justify-content: center; width: fit-content; }
+
+@media (max-width: 600px) {
+  .hero { padding: 22px 20px; }
+  .hero h1 { font-size: 2.05rem; }
+  .hero p { margin-bottom: 17px; }
+  .hero-note { display: none; }
+  .hero-actions { gap: 8px; }
+  .hero-actions .button { font-size: .78rem; padding-inline: 11px; }
+  .companion-banner { margin-block: 10px; gap: 8px; padding: 7px 11px; border-radius: 14px; }
+  .companion-banner > .fine-portrait { width: 48px; height: 39px; flex-basis: 48px; }
+  .companion-banner > .reward-emoji { width: 48px; flex-basis: 48px; font-size: 2rem; }
+  .companion-banner strong { font-size: .77rem; }
+  .companion-message { font-size: .68rem; }
+  .dashboard-strip { margin-block: 16px; }
+  .stat { padding: 12px 7px; }
+  .stat small { display: none; }
+  .stat-icon { width: 30px; height: 30px; margin-bottom: 6px; }
+  .daily-goal { gap: 9px; margin-block: 16px 25px; padding: 13px; }
+  .daily-goal h2 { font-size: 1.05rem; margin-bottom: 5px; }
+  .daily-goal .eyebrow { display: none; }
+  .daily-goal .mission-path { flex-wrap: nowrap; width: 100%; gap: 9px; margin: 0; padding: 8px 0 3px; background: none; border: 0; }
+  .daily-goal .mission-node { min-width: 0; min-height: 32px; width: 32px; padding: 0; border-radius: 10px; font-size: .7rem; }
+  .section-heading { gap: 10px; }
+  .section-heading .pill { font-size: .63rem; padding: 5px 8px; }
+  .settings-panel { padding: 14px; }
+  .settings-help { margin-top: 0; }
+  .topic-filters { gap: 6px; }
+  .filter { font-size: .73rem; padding-inline: 11px; min-height: 44px; }
+  .topic-grid { gap: 10px; }
+  .topic-grid .topic-card { min-height: 125px; padding: 13px; border-radius: 17px; }
+  .topic-icon { width: 34px; height: 34px; margin-bottom: 9px; font-size: 1.25rem; border-radius: 10px; }
+  .topic-title { font-size: .91rem; line-height: 1.25; margin-bottom: 8px; }
+  .topic-description { display: none; }
+  .topic-footer { font-size: .61rem; }
+  .topic-arrow { width: 24px; height: 24px; font-size: .9rem; }
+  .topic-grid:not(.expanded) .extra-topic { display: none; }
+  .topic-more { display: flex; width: 100%; margin-top: 15px; }
+  .daily-card { padding: 18px; gap: 12px; }
+  body:has(.practice-shell) .brand small { display: none; }
+  body:has(.practice-shell) .site-header.shell { min-height: 52px; padding-block: 4px; }
+  body:has(.practice-shell) .header-score { min-height: 44px; }
+  .practice-top, .practice-top .button { min-height: 44px; }
+  .round-track, .round-track:has(.round-dot:nth-child(11)) { margin-block: 3px 6px; }
+  .practice-shell > .companion-banner { margin-block: 6px 8px; }
+  .exercise-card { padding: 6px 12px 12px; }
+  .exercise-meta .button { min-height: 44px; }
+  .exercise-prompt { margin-bottom: 5px; font-size: 1rem; }
+  .equation { font-size: clamp(1.55rem, 6.5vw, 2.1rem); margin-block: 7px 10px; }
+  .equation-description { font-size: 1rem; line-height: 1.45; }
+  .answer-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: 'answer check' 'keys keys'; gap: 9px 8px; margin-top: 9px; }
+  .answer-line { grid-area: answer; flex-wrap: wrap; gap: 2px 5px; }
+  .answer-input { width: 100%; min-height: 48px; font-size: 1.45rem; padding: 4px; }
+  .answer-unit { font-size: .7rem; max-width: 100%; line-height: 1.2; }
+  .answer-form > .check-button { grid-area: check; margin: 0; min-height: 48px !important; width: 100%; padding: 8px; font-size: .76rem; line-height: 1.3; }
+  .answer-form .keypad { grid-area: keys; max-width: 100%; gap: 5px; }
+  .keypad .key { min-height: 44px; font-size: 1.1rem; }
+  .answer-form:has(.choices) { display: flex; }
+  .answer-form:has(.choices) > .check-button { width: 100%; }
+  .answer-form:has(input:disabled) { display: flex; }
+  .answer-form:has(input:disabled) .answer-input { width: 145px; }
+  .practice-actions { margin-top: 9px; gap: 4px; }
+  .practice-actions .button { min-height: 44px; font-size: .7rem; padding: 6px 8px; }
+  .choice { min-height: 48px; font-size: 1rem; padding: 10px; }
+  .modal { width: calc(100% - 24px); max-height: calc(100dvh - 24px); margin: auto; }
+  .modal-head { gap: 8px; padding: 16px; }
+  .modal-head h2 { min-width: 0; font-size: 1.3rem; }
+  .modal-head .button { flex-shrink: 0; min-width: 44px; }
+  .modal-body { padding: 16px; overflow-wrap: anywhere; }
+  .profile-card { min-width: 0; padding-inline: 8px; }
+  .profile-card strong { overflow-wrap: anywhere; }
+  .parent-grid, .info-card, .shop-section { min-width: 0; }
+  .info-card { padding: 18px; overflow-wrap: anywhere; }
+  .shop-section .section-heading { align-items: start; flex-wrap: wrap; }
+  .shop-item h3 { overflow-wrap: anywhere; }
+}
+
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; min-width: 0; }
+.header-actions .header-score { margin-left: 0; min-width: 0; }
+#header-stars { overflow: hidden; text-overflow: ellipsis; }
+.fullscreen-button { flex: 0 0 44px; width: 44px; min-height: 44px; border: 1px solid var(--line); border-radius: 13px; background: #fffdf6; color: var(--ink); font-size: 1.5rem; }
+.fullscreen-button:hover, .fullscreen-button[aria-pressed='true'] { background: #e6f0e2; }
+.site-footer.shell > div { flex-wrap: wrap; justify-content: center; }
+.install-steps { padding-left: 22px; font-size: .9rem; }
+.install-steps li { margin-block: 12px; }
+body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+@media (max-width: 600px) {
+  .header-actions { gap: 5px; }
+
+  .header-actions .header-score { padding-inline: 7px; max-width: 105px; }
 }
 
 @media print {
